@@ -64,74 +64,74 @@ class UniversityManagementSystem {
     private grades: IGrade[] = [];
     private studentCourseMap: Map<number, number[]> = new Map(); // Відображення студентів на курси
  
-enrollStudent(student: Omit<IStudent, "id">): IStudent {
-    const id = this.students.length + 1;
-    const newStudent: IStudent = { id, ...student };
-    this.students.push(newStudent);
-    return newStudent;
-}
+    enrollStudent(student: Omit<IStudent, "id">): IStudent {
+        const id = this.students.length + 1;
+        const newStudent: IStudent = { id, ...student };
+        this.students.push(newStudent);
+        return newStudent;
+    }
   
-registerForCourse(studentId: number, courseId: number): void {
-    const course = this.courses.find((c) => c.id === courseId);
-    const student = this.students.find((s) => s.id === studentId);
+    registerForCourse(studentId: number, courseId: number): void {
+        const course = this.courses.find((c) => c.id === courseId);
+        const student = this.students.find((s) => s.id === studentId);
 
-    if (!course || !student) throw new Error("Student or course not found");
+        if (!course || !student) throw new Error("Student or course not found");
 
-    if (course.faculty !== student.faculty) {
-      throw new Error("Student can only register for courses in their faculty");
+        if (course.faculty !== student.faculty) {
+        throw new Error("Student can only register for courses in their faculty");
+        }
+  
+        const registeredStudents = this.studentCourseMap.get(courseId) || [];
+        if (registeredStudents.length >= course.maxStudents) {
+        throw new Error("Course is full");
+        }
+        registeredStudents.push(studentId);
+        this.studentCourseMap.set(courseId, registeredStudents);
     }
   
-    const registeredStudents = this.studentCourseMap.get(courseId) || [];
-    if (registeredStudents.length >= course.maxStudents) {
-      throw new Error("Course is full");
+    setGrade(studentId: number, courseId: number, grade: Grade): void {
+        const registeredCourses = this.studentCourseMap.get(courseId) || [];
+        if (!registeredCourses.includes(studentId)) {
+            throw new Error("Student is not registered for this course");
+        }
+        const semester = this.courses.find((c) => c.id === courseId)?.semester;
+        if (!semester) throw new Error("Invalid course ID")
+        this.grades.push({
+            studentId,
+            courseId,
+            grade,
+            date: new Date(),
+            semester,
+        });
     }
-    registeredStudents.push(studentId);
-    this.studentCourseMap.set(courseId, registeredStudents);
-}
   
-setGrade(studentId: number, courseId: number, grade: Grade): void {
-    const registeredCourses = this.studentCourseMap.get(courseId) || [];
-    if (!registeredCourses.includes(studentId)) {
-        throw new Error("Student is not registered for this course");
-    }
-    const semester = this.courses.find((c) => c.id === courseId)?.semester;
-    if (!semester) throw new Error("Invalid course ID")
-    this.grades.push({
-        studentId,
-        courseId,
-        grade,
-        date: new Date(),
-        semester,
-    });
-}
+    updateStudentStatus(studentId: number, newStatus: StudentStatus): void {
+        const student = this.students.find((s) => s.id === studentId);
+        if (!student) throw new Error("Student not found");
   
-updateStudentStatus(studentId: number, newStatus: StudentStatus): void {
-    const student = this.students.find((s) => s.id === studentId);
-    if (!student) throw new Error("Student not found");
-  
-    if (newStatus === StudentStatus.Graduated || newStatus === StudentStatus.Expelled) {
+        if (newStatus === StudentStatus.Graduated || newStatus === StudentStatus.Expelled) {
+            student.status = newStatus;
+        } else if (student.status === StudentStatus.Graduated || student.status === StudentStatus.Expelled) {
+            throw new Error("Cannot change status of graduated or expelled student");
+        } else {
         student.status = newStatus;
-    } else if (student.status === StudentStatus.Graduated || student.status === StudentStatus.Expelled) {
-        throw new Error("Cannot change status of graduated or expelled student");
-    } else {
-        student.status = newStatus;
+        }
     }
-}
   
-getStudentsByFaculty(faculty: Faculty): IStudent[] {
-    return this.students.filter((s) => s.faculty === faculty);
-}
+    getStudentsByFaculty(faculty: Faculty): IStudent[] {
+        return this.students.filter((s) => s.faculty === faculty);
+    }
   
-getStudentGrades(studentId: number): IGrade[] {
-    return this.grades.filter((g) => g.studentId === studentId);
-}
+    getStudentGrades(studentId: number): IGrade[] {
+        return this.grades.filter((g) => g.studentId === studentId);
+    }
   
-getAvailableCourses(faculty: Faculty, semester: Semester): ICourse[] {
-    return this.courses.filter((c) => c.faculty === faculty && c.semester === semester);
-}
+    getAvailableCourses(faculty: Faculty, semester: Semester): ICourse[] {
+        return this.courses.filter((c) => c.faculty === faculty && c.semester === semester);
+    }
   
-calculateAverageGrade(studentId: number): number {
-    const grades = this.getStudentGrades(studentId);
+    calculateAverageGrade(studentId: number): number {
+        const grades = this.getStudentGrades(studentId);
         if (grades.length === 0) return 0;
   
         const total = grades.reduce((sum, g) => sum + g.grade, 0);
